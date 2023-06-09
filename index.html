@@ -1,10 +1,36 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>أخبار مصر</title>
-    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), interest-cohort=()">
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <style>
+	<head>
+		<title>أخبار مصر</title>
+		<meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), interest-cohort=()">
+			<link rel="icon" href="favicon.ico" type="image/x-icon">
+				<style>
+				body {
+  direction: rtl;
+}
+				.momo {
+  background-color: #f1f1f1;
+  overflow: hidden;
+}
+
+.momo a {
+  float: left;
+  color: black;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 18px;
+}
+
+.momo a:hover {
+  background-color: #ddd;
+}
+
+.momo a.selected {
+  color: blue;
+}
+
+
         .item {
             display: flex;
             margin-bottom: 20px;
@@ -17,171 +43,206 @@
         .item .content {
             flex: 1;
         }
+		
+		#loadingIndicator {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 4px solid #ccc;
+  border-top-color: #007bff;
+  animation: loadingAnimation 1s infinite linear;
+}
+
+@keyframes loadingAnimation {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.show-loading {
+  display: block !important;
+}
+
     </style>
-</head>
-<body>
-    <div id="items"></div>
-    <div id="pagination"></div>
-    <script>
+			</head>
+			<body>
+			<div id="menu"></div>
+			<div id="loadingIndicator"></div>
+				<div id="items"/>
+				<script>
+				const menu = document.getElementById('menu');
+				menu.className = 'momo';
+
+const loadingIndicator = document.getElementById('loadingIndicator');
+
+showLoadingIndicator();
+
+fetch('https://simplenews-bbb17-default-rtdb.europe-west1.firebasedatabase.app/arabshorts/xmls.json?shallow=true')
+  .then(response => response.json())
+  .then(data => {
+    // Count the number of keys in the data object
+    const keys = Object.keys(data);
+    const keysCount = keys.length;
+
+    // Loop through each key and create an <a> element for the menu
+    keys.forEach((key, index) => {
+      const menuItem = document.createElement('a');
+	  
+	  let keyName = key
+	  const parts = key.split('_');
+  if (parts.length > 3) {
+    keyName = parts[2];
+  } else {
+    keyName = parts[1];
+  }
+	  
+      menuItem.textContent = keyName;
+      menuItem.href = `${index + 1}`; // Use index + 1 as the href value
+
+      menuItem.addEventListener('click', event => {
+        event.preventDefault();
+        const hrefValue = event.target.getAttribute('href');
+        fetchData(hrefValue);
+		handleMenuItemClick(event)
+      });
+
+      menu.appendChild(menuItem);
+    });
+hideLoadingIndicator();
+fetchData('0')
+    console.log('Number of keys:', keysCount);
+  })
+  .catch(error => {
+    console.error('Error:', error);
+  });
+				
+				
+				function fetchData(hrefValue) {
+				// Get the "items" div where the content will be displayed
+                const itemsContainer = document.getElementById('items');
+				itemsContainer.innerHTML = '';
+				
+				showLoadingIndicator();
         // Fetch the JSON data
         fetch('https://simplenews-bbb17-default-rtdb.europe-west1.firebasedatabase.app/arabshorts/xmls.json')
             .then(response => response.json())
             .then(data => {
+			
+			
                 // Get the items array from the JSON data
-                const items = Object.values(data)[5]?.rss?.channel?.item; // Extract the first key's value
+                const items = Object.values(data)[hrefValue]?.rss?.channel?.item; // Extract the first key's value
 
-                // Get the "items" div where the content will be displayed
-                const itemsContainer = document.getElementById('items');
-                // Get the "pagination" div for pagination controls
-                const paginationContainer = document.getElementById('pagination');
-
-                // Define pagination variables
-                const itemsPerPage = 5; // Number of items to display per page
-                let currentPage = 1;
-
+                
                 // Check if items array exists
                 if (Array.isArray(items)) {
-                    // Calculate the starting and ending indices for the current page
-                    const startIndex = (currentPage - 1) * itemsPerPage;
-                    const endIndex = startIndex + itemsPerPage;
-                    const currentItems = items.slice(startIndex, endIndex);
+                    // Loop through each item and extract the necessary properties
+                    items.forEach(item => {
+                        const title = item.title?._t;
+						const pubdate = item.pubDate?._t;
+                        let description = item.description?._t;
+						if (!description) {
+						description = item.description?._cd;
+						}
+                        const link = item.link?._t;
+let image = item.enclosure?.url;
 
-                    // Display the current page of items
-                    displayItems(currentItems);
+if (!image) {
+  // Make an HTTP request to the link
+  fetch(link)
+    .then(response => response.text())
+    .then(html => {
+      // Extract the image thumbnail from the HTML response
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+      const imgElement = doc.querySelector("img");
 
-                    // Render pagination controls
-                    renderPagination();
+      if (imgElement) {
+        image = imgElement.src;
+        // Use the image URL here or assign it to a variable
+      } else {
+        // Handle the case where no image thumbnail is found
+        console.log("No image thumbnail found.");
+      }
+    })
+    .catch(error => {
+      // Handle any error that occurs during the HTTP request
+      console.log("Error fetching image thumbnail:", error);
+    });
+} else {
+  // Use the existing image URL
+}
 
-                    // Function to display items
-                    function displayItems(items) {
-                        // Clear the items container
-                        itemsContainer.innerHTML = '';
 
-                        // Loop through each item and extract the necessary properties
-                        items.forEach(item => {
-                            const title = item.title?._t;
-                            const pubdate = item.pubDate?._t;
-                            let description = item.description?._t;
-                            if (!description) {
-                                description = item.description?._cd;
-                            }
-                            const link = item.link?._t;
-                            let image = item.enclosure?.url;
+                        // Create the HTML elements to display the item
+                        const itemElement = document.createElement('div');
+                        itemElement.className = 'item';
 
-                            if (!image) {
-                                // Make an HTTP request to the link
-                                fetch(link)
-                                    .then(response => response.text())
-                                    .then(html => {
-                                        // Extract the image thumbnail from the HTML response
-                                        const parser = new DOMParser();
-                                        const doc = parser.parseFromString(html, "text/html");
-                                        const imgElement = doc.querySelector("img");
+                        const imageElement = document.createElement('img');
+                        imageElement.src = image;
 
-                                        if (imgElement) {
-                                            image = imgElement.src;
-                                            // Use the image URL here or assign it to a variable
-                                        } else {
-                                            // Handle the case where no image thumbnail is found
-                                            console.log("No image thumbnail found.");
-                                        }
-                                    })
-                                    .catch(error => {
-                                        // Handle any error that occurs during the HTTP request
-                                        console.log("Error fetching image thumbnail:", error);
-                                    });
-                            } else {
-                                // Use the existing image URL
-                            }
+                        const contentElement = document.createElement('div');
+                        contentElement.className = 'content';
 
-                            // Create the HTML elements to display the item
-                            const itemElement = document.createElement('div');
-                            itemElement.className = 'item';
+                        const titleElement = document.createElement('h2');
+                        titleElement.textContent = title;
 
-                            const imageElement = document.createElement('img');
-                            imageElement.src = image;
+                        const descriptionElement = document.createElement('p');
+						const sanitizedContent = description.replace(/<img\b[^>]*>/gi, '');
+                        descriptionElement.innerHTML = sanitizedContent;
 
-                            const contentElement = document.createElement('div');
-                            contentElement.className = 'content';
+                        const linkElement = document.createElement('a');
+linkElement.href = link;
+linkElement.target = "_blank";
+linkElement.textContent = 'Read More';
 
-                            const titleElement = document.createElement('h2');
-                            titleElement.textContent = title;
+                        // Append the elements to the container
+                        contentElement.appendChild(titleElement);
+                        contentElement.appendChild(descriptionElement);
+                        contentElement.appendChild(linkElement);
 
-                            const descriptionElement = document.createElement('p');
-                            const sanitizedContent = description.replace(/<img\b[^>]*>/gi, '');
-                            descriptionElement.innerHTML = sanitizedContent;
+                        itemElement.appendChild(imageElement);
+                        itemElement.appendChild(contentElement);
 
-                            const linkElement = document.createElement('a');
-                            linkElement.href = link;
-                            linkElement.target = "_blank";
-                            linkElement.textContent = 'Read More';
-
-                            // Append the elements to the container
-                            contentElement.appendChild(titleElement);
-                            contentElement.appendChild(descriptionElement);
-                            contentElement.appendChild(linkElement);
-
-                            itemElement.appendChild(imageElement);
-                            itemElement.appendChild(contentElement);
-
-                            itemsContainer.appendChild(itemElement);
-                        });
-                    }
-
-                    // Function to render pagination controls
-                    function renderPagination() {
-                        // Clear the pagination container
-                        paginationContainer.innerHTML = '';
-
-                        // Calculate the total number of pages
-                        const totalPages = Math.ceil(items.length / itemsPerPage);
-
-                        // Create previous page button
-                        if (currentPage > 1) {
-                            const prevButton = createPaginationButton('Previous', currentPage - 1);
-                            paginationContainer.appendChild(prevButton);
-                        }
-
-                        // Create page number buttons
-                        for (let i = 1; i <= totalPages; i++) {
-                            const pageButton = createPaginationButton(i, i);
-                            paginationContainer.appendChild(pageButton);
-                        }
-
-                        // Create next page button
-                        if (currentPage < totalPages) {
-                            const nextButton = createPaginationButton('Next', currentPage + 1);
-                            paginationContainer.appendChild(nextButton);
-                        }
-                    }
-
-                    // Function to create a pagination button
-                    function createPaginationButton(text, page) {
-                        const button = document.createElement('button');
-                        button.textContent = text;
-
-                        // Add event listener to handle page navigation
-                        button.addEventListener('click', () => {
-                            currentPage = page;
-                            // Calculate the starting and ending indices for the current page
-                            const startIndex = (currentPage - 1) * itemsPerPage;
-                            const endIndex = startIndex + itemsPerPage;
-                            const currentItems = items.slice(startIndex, endIndex);
-
-                            // Display the current page of items
-                            displayItems(currentItems);
-
-                            // Render pagination controls
-                            renderPagination();
-                        });
-
-                        return button;
-                    }
+                        itemsContainer.appendChild(itemElement);
+						hideLoadingIndicator();
+                    });
+					
                 } else {
                     console.error('Invalid JSON structure');
                 }
             })
             .catch(error => console.error('Error:', error));
+			}
+			
+			// Function to show the loading indicator
+function showLoadingIndicator() {
+  loadingIndicator.classList.add('show-loading');
+}
+
+// Function to hide the loading indicator
+function hideLoadingIndicator() {
+  loadingIndicator.classList.remove('show-loading');
+}
+
+function handleMenuItemClick(event) {
+  const menuItems = document.querySelectorAll('.momo a');
+
+  // Remove the "selected" class from all menu items
+  menuItems.forEach(item => {
+     item.classList.remove('selected');
+  });
+
+  // Add the "selected" class to the clicked menu item
+  event.target.classList.add('selected');
+}
     </script>
-</body>
-</html>
+				</body>
+			</html>
