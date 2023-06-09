@@ -35,11 +35,7 @@
             display: flex;
             margin-bottom: 20px;
         }
-        .item img {
-            width: 100px;
-            height: 100px;
-            margin-right: 10px;
-        }
+       
         .item .content {
             flex: 1;
         }
@@ -70,7 +66,15 @@
 .show-loading {
   display: block !important;
 }
-
+.image-container {
+     display: flex;
+     justify-content: center;
+     align-items: center;
+}
+ .image-container img {
+     max-width: 300px;
+     max-height: 100%;
+}
     </style>
 			</head>
 			<body>
@@ -185,8 +189,11 @@ if (!image) {
                         const itemElement = document.createElement('div');
                         itemElement.className = 'item';
 
-                        const imageElement = document.createElement('img');
-                        imageElement.src = image;
+                        const imageContainer = document.createElement('div');
+                    imageContainer.className = 'image-container';
+                    const imageElement = document.createElement('img');
+                    imageElement.src = image;
+                    imageContainer.appendChild(imageElement);
 
                         const contentElement = document.createElement('div');
                         contentElement.className = 'content';
@@ -208,7 +215,7 @@ linkElement.textContent = 'Read More';
                         contentElement.appendChild(descriptionElement);
                         contentElement.appendChild(linkElement);
 
-                        itemElement.appendChild(imageElement);
+                        itemElement.appendChild(imageContainer);
                         itemElement.appendChild(contentElement);
 
                         itemsContainer.appendChild(itemElement);
