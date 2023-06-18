@@ -1,263 +1,283 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>أخبار مصر</title>
-		<meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), interest-cohort=()">
-			<link rel="icon" href="favicon.ico" type="image/x-icon">
-				<style>
-				body {
-  direction: rtl;
-}
-				.momo {
-  background-color: #f1f1f1;
-  overflow: hidden;
-}
+<head>
+  <title>أخبار مصر</title>
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), interest-cohort=()">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <style>
+    body {
+      direction: rtl;
+    }
 
-.momo a {
-  float: left;
-  color: black;
-  text-align: center;
-  padding: 14px 16px;
-  text-decoration: none;
-  font-size: 18px;
-}
+    .momo {
+      background-color: #f1f1f1;
+      overflow: hidden;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: baseline;
+    }
 
-.momo a:hover {
-  background-color: #ddd;
-}
+    .momo a {
+      color: black;
+      text-align: center;
+      padding: 14px 16px;
+      text-decoration: none;
+      font-size: 18px;
+    }
 
-.momo a.selected {
-  color: blue;
-}
+    .momo a:hover {
+      background-color: #ddd;
+    }
 
+    .momo a.selected {
+      color: blue;
+    }
 
-        .item {
-            display: flex;
-            margin-bottom: 20px;
+    .item {
+      display: flex;
+      margin-bottom: 20px;
+    }
+
+    .item .content {
+      flex: 1;
+    }
+
+    .items {
+      margin-left: 24px;
+      margin-right: 24px;
+      margin-top: 24px;
+      margin-bottom: 24px;
+    }
+
+    .content {
+      margin-right: 24px;
+    }
+
+    #loadingIndicator {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 4px solid #ccc;
+      border-top-color: #007bff;
+      animation: loadingAnimation 1s infinite linear;
+    }
+
+    @keyframes loadingAnimation {
+      0% {
+        transform: translate(-50%, -50%) rotate(0deg);
+      }
+      100% {
+        transform: translate(-50%, -50%) rotate(360deg);
+      }
+    }
+
+    .show-loading {
+      display: block !important;
+    }
+
+    .image-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .image-container img {
+      max-width: 300px;
+      max-height: 100%;
+    }
+  </style>
+</head>
+<body>
+<div style="text-align: center;">
+  <a href="https://play.google.com/store/apps/details?id=arabic.news.shorts" target="_blank">
+    <img src="https://raw.githubusercontent.com/arkfalak/akhbarmasr/main/akhbarmasrlogo.webp" alt="Akhbar Masr Logo" style="display: inline-block; max-width: 60px; max-height: 60px;">
+  </a>
+</div>
+<br/>
+<div id="menu"></div>
+<div id="loadingIndicator"></div>
+<div id="items"></div>
+<script>
+  const menu = document.getElementById('menu');
+  menu.className = 'momo';
+
+  const loadingIndicator = document.getElementById('loadingIndicator');
+
+  showLoadingIndicator();
+
+  fetch('https://simplenews-bbb17-default-rtdb.europe-west1.firebasedatabase.app/arabshorts/xmls.json?shallow=true')
+    .then(response => response.json())
+    .then(data => {
+      const keys = Object.keys(data);
+      const keysCount = keys.length;
+
+      keys.forEach((key, index) => {
+        const menuItem = document.createElement('a');
+
+        let keyName = key;
+        const parts = key.split('_');
+        if (parts.length > 3) {
+          keyName = parts[2];
+        } else {
+          keyName = parts[1];
         }
-       
-        .item .content {
-            flex: 1;
-        }
-		 .items {
-     margin-left: 24px;
-     margin-right: 24px;
-     margin-top: 24px;
-     margin-bottom: 24px;
-}
- .content {
-     margin-right: 24px;
-}
-		#loadingIndicator {
-  display: none;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  border: 4px solid #ccc;
-  border-top-color: #007bff;
-  animation: loadingAnimation 1s infinite linear;
-}
 
-@keyframes loadingAnimation {
-  0% {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  100% {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
+        const domain = extractDomain(key);
+        const googlefav = `https://www.google.com/s2/favicons?sz=32&domain_url=${domain}`;
 
-.show-loading {
-  display: block !important;
-}
-.image-container {
-     display: flex;
-     justify-content: center;
-     align-items: center;
-}
- .image-container img {
-     max-width: 300px;
-     max-height: 100%;
-}
-    </style>
-			</head>
-			<body>
-			<div id="menu"></div>
-			<div id="loadingIndicator"></div>
-				<div id="items"/>
-				<script>
-				const menu = document.getElementById('menu');
-				menu.className = 'momo';
+        const icon = document.createElement('img');
+        icon.src = googlefav;
+        icon.alt = `${domain} Icon`;
 
-const loadingIndicator = document.getElementById('loadingIndicator');
+        const text = document.createElement('span');
+        text.textContent = keyName;
+        text.style.display = 'block';
+        text.style.textAlign = 'center';
 
-showLoadingIndicator();
+        menuItem.appendChild(icon);
+        menuItem.appendChild(text);
 
-fetch('https://simplenews-bbb17-default-rtdb.europe-west1.firebasedatabase.app/arabshorts/xmls.json?shallow=true')
-  .then(response => response.json())
-  .then(data => {
-    // Count the number of keys in the data object
-    const keys = Object.keys(data);
-    const keysCount = keys.length;
+        menuItem.href = `${index + 1}`;
+        menuItem.addEventListener('click', event => {
+          fetchData(key);
+          handleMenuItemClick(event);
+        });
 
-    // Loop through each key and create an <a> element for the menu
-    keys.forEach((key, index) => {
-      const menuItem = document.createElement('a');
-	  
-	  let keyName = key
-	  const parts = key.split('_');
-  if (parts.length > 3) {
-    keyName = parts[2];
-  } else {
-    keyName = parts[1];
-  }
-	  
-      menuItem.textContent = keyName;
-      menuItem.href = `${index + 1}`; // Use index + 1 as the href value
-
-      menuItem.addEventListener('click', event => {
-        event.preventDefault();
-        const hrefValue = event.target.getAttribute('href');
-        fetchData(hrefValue);
-		handleMenuItemClick(event)
+        menu.appendChild(menuItem);
       });
 
-      menu.appendChild(menuItem);
-    });
-hideLoadingIndicator();
-fetchData('0')
-    console.log('Number of keys:', keysCount);
-  })
-  .catch(error => {
-    console.error('Error:', error);
-  });
-				
-				
-				function fetchData(hrefValue) {
-				// Get the "items" div where the content will be displayed
-                const itemsContainer = document.getElementById('items');
-				itemsContainer.innerHTML = '';
-				
-				showLoadingIndicator();
-        // Fetch the JSON data
-        fetch('https://simplenews-bbb17-default-rtdb.europe-west1.firebasedatabase.app/arabshorts/xmls.json')
-            .then(response => response.json())
-            .then(data => {
-			
-			
-                // Get the items array from the JSON data
-                const items = Object.values(data)[hrefValue]?.rss?.channel?.item; // Extract the first key's value
-
-                
-                // Check if items array exists
-                if (Array.isArray(items)) {
-                    // Loop through each item and extract the necessary properties
-                    items.forEach(item => {
-                        const title = item.title?._t;
-						const pubdate = item.pubDate?._t;
-                        let description = item.description?._t;
-						if (!description) {
-						description = item.description?._cd;
-						}
-                        const link = item.link?._t;
-let image = item.enclosure?.url;
-
-if (!image) {
-  // Make an HTTP request to the link
-  fetch(link)
-    .then(response => response.text())
-    .then(html => {
-      // Extract the image thumbnail from the HTML response
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, "text/html");
-      const imgElement = doc.querySelector("img");
-
-      if (imgElement) {
-        image = imgElement.src;
-        // Use the image URL here or assign it to a variable
-      } else {
-        // Handle the case where no image thumbnail is found
-        console.log("No image thumbnail found.");
-      }
+      hideLoadingIndicator();
+      const firstMenuItem = menu.querySelector('a');
+      firstMenuItem.click();
+      console.log('Number of keys:', keysCount);
     })
     .catch(error => {
-      // Handle any error that occurs during the HTTP request
-      console.log("Error fetching image thumbnail:", error);
+      console.error('Error:', error);
     });
-} else {
-  // Use the existing image URL
-}
 
+  function fetchData(hrefValue) {
+    const itemsContainer = document.getElementById('items');
+    itemsContainer.innerHTML = '';
 
-                        // Create the HTML elements to display the item
-                        const itemElement = document.createElement('div');
-                        itemElement.className = 'item';
+    showLoadingIndicator();
 
-                        const imageContainer = document.createElement('div');
-                    imageContainer.className = 'image-container';
-                    const imageElement = document.createElement('img');
-                    imageElement.src = image;
-                    imageContainer.appendChild(imageElement);
+    const baseurl = "https://simplenews-bbb17-default-rtdb.europe-west1.firebasedatabase.app/arabshorts/xmls/";
+    const pathend = "/rss/channel/item.json";
+    const uurl = baseurl + hrefValue + pathend;
 
-                        const contentElement = document.createElement('div');
-                        contentElement.className = 'content';
+    fetch(uurl)
+      .then(response => response.json())
+      .then(data => {
+        const items = data;
 
-                        const titleElement = document.createElement('h2');
-                        titleElement.textContent = title;
+        if (Array.isArray(items)) {
+          items.forEach(item => {
+            const title = item.title?._t;
+            const pubdate = item.pubDate?._t;
+            let description = item.description?._t;
 
-                        const descriptionElement = document.createElement('p');
-						const sanitizedContent = description.replace(/<img\b[^>]*>/gi, '');
-                        descriptionElement.innerHTML = sanitizedContent;
+            if (!description) {
+              description = item.description?._cd;
+            }
 
-                        const linkElement = document.createElement('a');
-linkElement.href = link;
-linkElement.target = "_blank";
-linkElement.textContent = 'إقرأ المزيد ...';
+            const link = item.link?._t;
+            let image = item.enclosure?.url;
 
-                        // Append the elements to the container
-                        contentElement.appendChild(titleElement);
-                        contentElement.appendChild(descriptionElement);
-                        contentElement.appendChild(linkElement);
+            if (!image) {
+              fetch(link)
+                .then(response => response.text())
+                .then(html => {
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(html, "text/html");
+                  const imgElement = doc.querySelector("img");
 
-                        itemElement.appendChild(imageContainer);
-                        itemElement.appendChild(contentElement);
+                  if (imgElement) {
+                    image = imgElement.src;
+                  } else {
+                    console.log("No image thumbnail found.");
+                  }
+                })
+                .catch(error => {
+                  console.log("Error fetching image thumbnail:", error);
+                });
+            } else {
+              // Use the existing image URL
+            }
 
-                        itemsContainer.appendChild(itemElement);
-						hideLoadingIndicator();
-                    });
-					
-                } else {
-                    console.error('Invalid JSON structure');
-                }
-            })
-            .catch(error => console.error('Error:', error));
-			}
-			
-			// Function to show the loading indicator
-function showLoadingIndicator() {
-  loadingIndicator.classList.add('show-loading');
-}
+            const itemElement = document.createElement('div');
+            itemElement.className = 'item';
 
-// Function to hide the loading indicator
-function hideLoadingIndicator() {
-  loadingIndicator.classList.remove('show-loading');
-}
+            const imageContainer = document.createElement('div');
+            imageContainer.className = 'image-container';
+            const imageElement = document.createElement('img');
+            imageElement.src = image;
+            imageContainer.appendChild(imageElement);
 
-function handleMenuItemClick(event) {
-  const menuItems = document.querySelectorAll('.momo a');
+            const contentElement = document.createElement('div');
+            contentElement.className = 'content';
 
-  // Remove the "selected" class from all menu items
-  menuItems.forEach(item => {
-     item.classList.remove('selected');
-  });
+            const titleElement = document.createElement('h2');
+            titleElement.textContent = title;
 
-  // Add the "selected" class to the clicked menu item
-  event.target.classList.add('selected');
-}
-    </script>
-				</body>
-			</html>
+            const descriptionElement = document.createElement('p');
+            const sanitizedContent = description.replace(/<img\b[^>]*>/gi, '');
+            descriptionElement.innerHTML = sanitizedContent;
+
+            const linkElement = document.createElement('a');
+            linkElement.href = link;
+            linkElement.target = "_blank";
+            linkElement.textContent = 'إقرأ المزيد ...';
+
+            contentElement.appendChild(titleElement);
+            contentElement.appendChild(descriptionElement);
+            contentElement.appendChild(linkElement);
+
+            itemElement.appendChild(imageContainer);
+            itemElement.appendChild(contentElement);
+
+            itemsContainer.appendChild(itemElement);
+            hideLoadingIndicator();
+          });
+
+        } else {
+          console.error('Invalid JSON structure');
+        }
+      })
+      .catch(error => console.error('Error:', error));
+  }
+
+  function showLoadingIndicator() {
+    loadingIndicator.classList.add('show-loading');
+  }
+
+  function hideLoadingIndicator() {
+    loadingIndicator.classList.remove('show-loading');
+  }
+
+  function handleMenuItemClick(event) {
+    event.preventDefault();
+    const menuItem = event.target.closest('.momo a');
+
+    const menuItems = document.querySelectorAll('.momo a');
+
+    menuItems.forEach(item => {
+      item.classList.remove('selected');
+    });
+
+    menuItem.classList.add('selected');
+  }
+
+  function extractDomain(inputString) {
+    const parts = inputString.split('_');
+    const domain = parts.slice(1).join('_').replace(/_/g, '.');
+    return domain;
+  }
+</script>
+</body>
+</html>
